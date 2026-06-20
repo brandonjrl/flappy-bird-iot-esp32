@@ -27,11 +27,11 @@ export default function App() {
   const CANVAS_WIDTH = 400;
   const CANVAS_HEIGHT = 550;
   const GROUND_HEIGHT = 70;
-  const GRAVITY = 0.38;
-  const JUMP_STRENGTH = -6.8;
-  const PIPE_SPEED = 2.4;
-  const PIPE_GAP = 145; // Espacio entre tubos
-  const PIPE_SPAWN_RATE = 100; // En cuadros (frames)
+  const GRAVITY = 0.26;
+  const JUMP_STRENGTH = -5.2;
+  const PIPE_SPEED = 1.6;
+  const PIPE_GAP = 175; // Espacio entre tubos (más fácil)
+  const PIPE_SPAWN_RATE = 140; // En cuadros (más espaciados)
 
   // Datos del Ave (Ref para mutación directa en físicas)
   const birdRef = useRef({
