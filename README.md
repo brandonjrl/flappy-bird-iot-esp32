@@ -219,3 +219,35 @@ Los archivos optimizados y minificados se generarán en la carpeta `dist/`.
 - **Simulador de MQTT**: El dashboard web incluye un botón gigante de simulación de señal de hardware. Al presionarlo, el cliente web publica de forma autónoma el mensaje `"JUMP"` en el broker, validando el funcionamiento del WebSocket seguro de HiveMQ.
 - **Consola de Telemetría**: Panel de terminal retro que muestra el historial de conexión del cliente de mensajería e imprime los comandos de salto con milisegundos de precisión.
 - **Almacenamiento Local (Local Storage)**: Los puntajes más altos del jugador persisten en el navegador.
+
+---
+
+## 🔧 Solución de Problemas al Cargar el Código al ESP32
+
+Si al intentar cargar el código a la placa desde el Arduino IDE encuentras el siguiente error en la consola:
+
+```text
+El Sketch usa 911323 bytes (69%) del espacio de almacenamiento de programa. El máximo es 1310720 bytes.
+Las variables Globales usan 46800 bytes (14%) de la memoria dinámica, dejando 280880 bytes para las variables locales. El máximo es 327680 bytes.
+esptool v5.3.0
+Serial port COM8:
+Connecting......................................
+
+A fatal error occurred: Failed to connect to ESP32: Wrong boot mode detected (0x13)! The chip needs to be in download mode.
+For troubleshooting steps visit: https://docs.espressif.com/projects/esptool/en/latest/troubleshooting.html
+Failed uploading: uploading error: exit status 2
+```
+
+¡Ese mensaje significa que tu código compiló a la perfección! La buena noticia es que el software está 100% listo. El único detalle ahora es físico: el chip del ESP32 no se enteró de que le ibas a meter código nuevo porque no entró en modo de descarga (*download mode*).
+
+El error `Wrong boot mode detected (0x13)` ocurre porque algunas placas de desarrollo no logran realizar el auto-reset automáticamente debido a variaciones en la energía del puerto USB, capacitancia o el cable de datos.
+
+### Pasos exactos para solucionarlo mediante el botón físico:
+
+1. Presiona nuevamente el botón de **Subir** (la flecha a la derecha ➜) en el Arduino IDE.
+2. Observa con atención la consola del IDE. En cuanto veas que vuelve a aparecer la línea de puntos de conexión:  
+   `Connecting......................................`
+3. En ese preciso instante, mantén presionado el botón que dice **"BOOT"** (o **"BOOT/IO0"**) en tu placa ESP32.
+4. No lo sueltes hasta que veas que el texto en la consola cambia y dice algo como `Writing at 0x00001000...` o empiece a mostrar el progreso de subida en porcentaje.
+5. En cuanto comience a escribir en la memoria flash, ya puedes soltar el botón y dejar que el proceso termine al 100%.
+
