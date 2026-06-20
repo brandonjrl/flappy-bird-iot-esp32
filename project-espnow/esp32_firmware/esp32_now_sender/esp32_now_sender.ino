@@ -5,6 +5,7 @@
 
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 // --- Configuración de Pines ---
 const int BUTTON_PIN = 4; // GPIO4 conectado al pulsador (GND)
@@ -23,19 +24,25 @@ typedef struct struct_message {
 struct_message myData;
 esp_now_peer_info_t peerInfo;
 
-// Callback cuando se envía un mensaje
+// Callback cuando se envía un mensaje (Compatible con Core ESP32 v2.x y v3.x)
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+void OnDataSent(const wifi_tx_info_t *txInfo, esp_now_send_status_t status) {
+#else
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+#endif
   Serial.print("\r\nEstado de envío del último paquete: ");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Éxito" : "Fallo");
 }
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("Emisor ESP-NOW: Iniciando...");
   
   // Configurar botón
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  // Configurar WiFi en modo Estación (requerido para ESP-NOW)
+  // Configurar WiFi en modo Estación (Por defecto inicia en Canal 1)
   WiFi.mode(WIFI_STA);
 
   // Inicializar ESP-NOW

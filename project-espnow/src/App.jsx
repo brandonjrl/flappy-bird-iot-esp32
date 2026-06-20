@@ -426,8 +426,16 @@ export default function App() {
       setSerialStatus('connecting');
       
       await port.open({ baudRate: 115200 });
+      
+      // Secuencia de reinicio físico (DTR/RTS) para sacar al ESP32 del modo Bootloader
+      // 1. Resetear (EN = LOW): DTR = false, RTS = true
+      await port.setSignals({ dataTerminalReady: false, requestToSend: true });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      // 2. Arrancar (EN = HIGH, IO0 = HIGH): DTR = false, RTS = false
+      await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+      
       setSerialStatus('connected');
-      addLog('Puerto serie COM conectado a 115200 baudios.');
+      addLog('Puerto serie COM conectado y placa reiniciada.');
       
       // Lanzar bucle de lectura asíncrono
       readSerial(port);
