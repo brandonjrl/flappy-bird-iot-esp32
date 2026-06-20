@@ -3,22 +3,21 @@
  * Dispara el salto del ave publicando un mensaje en el broker MQTT de HiveMQ.
  */
 
-#include <PubSubClient.h>
 #include <WiFi.h>
-
+#include <PubSubClient.h>
 
 // --- Ajustes de Red y Comunicación ---
-const char *ssid = "TU_WIFI_SSID";             // Tu red WiFi
-const char *password = "TU_WIFI_PASSWORD";     // Tu contraseña WiFi
-const char *mqtt_server = "broker.hivemq.com"; // Broker público de HiveMQ
-const int mqtt_port = 1883;                    // Puerto TCP estándar para MQTT
-const char *topic = "workshop/flappy_bird/jump";
+const char* ssid = "TU_WIFI_SSID";             // Tu red WiFi
+const char* password = "TU_WIFI_PASSWORD";     // Tu contraseña WiFi
+const char* mqtt_server = "broker.hivemq.com";               // Broker público de HiveMQ
+const int mqtt_port = 1883;                                  // Puerto TCP estándar para MQTT
+const char* topic = "workshop/flappy_bird/jump";
 
 // --- Configuración de Pines ---
 const int BUTTON_PIN = 4; // Pin GPIO4 conectado al pulsador
 int lastButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = 20; // Tiempo de antirebote en milisegundos
+const unsigned long debounceDelay = 50; // Tiempo de antirebote en milisegundos
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -49,7 +48,7 @@ void reconnect() {
     Serial.print("Intentando conexion MQTT...");
     // Generar un ID de cliente aleatorio único
     String clientId = "ESP32Client-" + String(random(0xffff), HEX);
-
+    
     if (client.connect(clientId.c_str())) {
       Serial.println("¡Conectado al Broker!");
     } else {
@@ -64,10 +63,10 @@ void reconnect() {
 void setup() {
   // Configurar el pin del botón con resistencia de pull-up interna activa
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-
+  
   Serial.begin(115200);
   setup_wifi();
-
+  
   client.setServer(mqtt_server, mqtt_port);
 }
 

@@ -56,7 +56,7 @@ export default function App() {
   // --- Lógica del Salto del Pájaro (Core) ---
   const jump = () => {
     birdRef.current.velocity = JUMP_STRENGTH;
-    
+
     // Crear partículas de viento/salto
     for (let i = 0; i < 5; i++) {
       particlesRef.current.push({
@@ -78,7 +78,7 @@ export default function App() {
     setGameState('PLAYING');
     scoreRef.current = 0;
     setScore(0);
-    
+
     // Reiniciar Pájaro
     birdRef.current.y = 200;
     birdRef.current.velocity = 0;
@@ -227,10 +227,10 @@ export default function App() {
         ctx.strokeStyle = '#052e16';
         ctx.lineWidth = 3;
         ctx.strokeRect(pipe.x, -5, pipe.width, pipe.topHeight + 5);
-        
+
         ctx.fillStyle = '#4ade80'; // Resplandor lateral izquierdo
         ctx.fillRect(pipe.x + 4, 0, 6, pipe.topHeight);
-        
+
         // Pestaña (sombrero) del Tubo Superior
         ctx.fillStyle = '#16a34a';
         ctx.fillRect(pipe.x - 4, pipe.topHeight - 20, pipe.width + 8, 20);
@@ -258,7 +258,7 @@ export default function App() {
           pipe.passed = true;
           scoreRef.current += 1;
           setScore(scoreRef.current);
-          
+
           // Crear texto flotante de puntuación
           floatingTextsRef.current.push({
             x: birdRef.current.x,
@@ -280,7 +280,7 @@ export default function App() {
       if (state === 'PLAYING') {
         bird.velocity += GRAVITY;
         bird.y += bird.velocity;
-        
+
         // Simular aleteo de alas
         bird.wingPosition = Math.sin(frameCountRef.current * 0.4) * 5;
 
@@ -544,7 +544,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center py-6 px-4 font-sans select-none">
-      
+
       {/* HEADER PRINCIPAL */}
       <header className="text-center mb-8 max-w-4xl w-full">
         <h1 className="text-2xl md:text-4xl text-amber-400 font-bold tracking-wider font-mono border-b-4 border-amber-500 pb-3 mb-2 flex items-center justify-center gap-3">
@@ -557,21 +557,20 @@ export default function App() {
 
       {/* DISEÑO EN COLUMNAS / RESPONSIVE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl w-full items-start">
-        
+
         {/* PANEL IZQUIERDO: TELEMETRÍA MQTT */}
         <section className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-sm font-semibold tracking-wider text-slate-300 font-mono flex items-center gap-2">
               📡 TELEMETRÍA MQTT
             </h2>
-            
+
             {/* Indicador de Estado de Conexión */}
             <div className="flex items-center gap-2">
-              <span className={`h-3.5 w-3.5 rounded-full inline-block animate-pulse ${
-                mqttStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' :
-                mqttStatus === 'connecting' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' :
-                'bg-red-500 shadow-[0_0_8px_#ef4444]'
-              }`} />
+              <span className={`h-3.5 w-3.5 rounded-full inline-block animate-pulse ${mqttStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' :
+                  mqttStatus === 'connecting' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' :
+                    'bg-red-500 shadow-[0_0_8px_#ef4444]'
+                }`} />
               <span className="text-xs font-mono uppercase font-bold text-slate-300">
                 {mqttStatus === 'connected' ? 'Conectado' : mqttStatus === 'connecting' ? 'Conectando' : 'Desconectado'}
               </span>
@@ -602,7 +601,7 @@ export default function App() {
             >
               🔴 SIMULAR BOTÓN FÍSICO (JUMP)
             </button>
-            
+
             <button
               onClick={() => setShowSimulator(!showSimulator)}
               className="text-slate-400 hover:text-slate-200 text-xs font-mono underline text-center block cursor-pointer"
@@ -632,10 +631,10 @@ export default function App() {
 
         {/* PANEL CENTRAL: GABINETE ARCADE & CANVAS */}
         <section className="lg:col-span-4 flex flex-col items-center">
-          
+
           {/* Cabina Arcade */}
           <div className="relative bg-slate-900 border-4 border-slate-700 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] max-w-[448px] w-full flex flex-col items-center overflow-hidden">
-            
+
             {/* Marquesina Superior */}
             <div className="w-full bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-center py-2.5 rounded-t-xl mb-4 border-b-4 border-slate-950 shadow-inner flex flex-col gap-0.5">
               <span className="font-mono text-slate-950 font-black text-lg tracking-widest animate-pulse">
@@ -658,7 +657,7 @@ export default function App() {
 
             {/* CONTENEDOR DEL CANVAS */}
             <div className="relative bg-black rounded-lg border-4 border-slate-950 overflow-hidden cursor-pointer" onClick={triggerBirdJump}>
-              
+
               <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
@@ -676,7 +675,7 @@ export default function App() {
                     <p className="text-[10px] font-mono text-slate-300 mb-6 uppercase tracking-wider">
                       IoT Hardware Edition
                     </p>
-                    
+
                     {/* Icono animado de Espacio */}
                     <div className="flex flex-col items-center gap-3 mb-6">
                       <div className="w-24 h-6 border-2 border-dashed border-slate-400 rounded-full flex items-center justify-center bg-slate-800 text-[8px] font-mono text-slate-300 animate-bounce">
@@ -765,10 +764,10 @@ export default function App() {
             <p>
               Puedes conectar un botón físico a un microcontrolador <strong>ESP32</strong> (o ESP8266) para controlar el juego de forma inalámbrica.
             </p>
-            
+
             <h3 className="font-mono text-slate-200 font-bold mt-2">1. DIAGRAMA DE CONEXIONES</h3>
             <div className="bg-slate-950 p-2.5 rounded font-mono text-[10px] text-slate-300 border border-slate-850 overflow-x-auto whitespace-pre">
-{`   [ ESP32 ]             [ BOTÓN FÍSICO ]
+              {`   [ ESP32 ]             [ BOTÓN FÍSICO ]
    +-------+                 +-------+
    |  GND  |-----------------| Terminal 1
    |       |                 |       |
@@ -780,59 +779,97 @@ export default function App() {
             <p className="text-[11px]">
               Instala la librería <code>PubSubClient</code> de Nick O'Leary en tu IDE de Arduino, configura tu WiFi y carga este sketch:
             </p>
-            
+
             <div className="relative">
               <pre className="bg-slate-950 p-3 rounded-lg text-[10px] text-emerald-400 font-mono border border-slate-850 max-h-60 overflow-y-auto scrollbar-thin">
-{`#include <WiFi.h>
+                {`#include <WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid = "TU_WIFI_SSID";
-const char* password = "TU_WIFI_PASSWORD";
-const char* mqtt_server = "broker.hivemq.com";
-const int mqtt_port = 1883;
+// --- Ajustes de Red y Comunicación ---
+const char* ssid = "TU_WIFI_SSID";             // Tu red WiFi
+const char* password = "TU_WIFI_PASSWORD";     // Tu contraseña WiFi
+const char* mqtt_server = "broker.hivemq.com";               // Broker público de HiveMQ
+const int mqtt_port = 1883;                                  // Puerto TCP estándar para MQTT
 const char* topic = "workshop/flappy_bird/jump";
+
+// --- Configuración de Pines ---
+const int BUTTON_PIN = 4; // Pin GPIO4 conectado al pulsador
+int lastButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50; // Tiempo de antirebote en milisegundos
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-const int BUTTON_PIN = 4; // GPIO4
-int lastButtonState = HIGH;
 
-void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  Serial.begin(115200);
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Conectando a ");
+  Serial.println(ssid);
+
   WiFi.begin(ssid, password);
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  client.setServer(mqtt_server, mqtt_port);
+
+  randomSeed(micros());
+  Serial.println("");
+  Serial.println("WiFi conectado exitosamente");
+  Serial.print("Direccion IP: ");
+  Serial.println(WiFi.localIP());
 }
 
 void reconnect() {
+  // Loop hasta reconectar con el broker MQTT
   while (!client.connected()) {
+    Serial.print("Intentando conexion MQTT...");
+    // Generar un ID de cliente aleatorio único
     String clientId = "ESP32Client-" + String(random(0xffff), HEX);
+    
     if (client.connect(clientId.c_str())) {
-      Serial.println("Conectado a MQTT!");
+      Serial.println("¡Conectado al Broker!");
     } else {
+      Serial.print("Fallo de conexion, rc=");
+      Serial.print(client.state());
+      Serial.println(". Reintentando en 5 segundos...");
       delay(5000);
     }
   }
 }
 
+void setup() {
+  // Configurar el pin del botón con resistencia de pull-up interna activa
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  
+  Serial.begin(115200);
+  setup_wifi();
+  
+  client.setServer(mqtt_server, mqtt_port);
+}
+
 void loop() {
-  if (!client.connected()) reconnect();
+  if (!client.connected()) {
+    reconnect();
+  }
   client.loop();
 
-  int state = digitalRead(BUTTON_PIN);
-  if (state == LOW && lastButtonState == HIGH) {
-    delay(50); // Debounce
-    if (digitalRead(BUTTON_PIN) == LOW) {
+  // Lectura del pin del botón
+  int reading = digitalRead(BUTTON_PIN);
+
+  // Comprobación de estado lógico de caída (Físico presionado)
+  if (reading == LOW && lastButtonState == HIGH) {
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      // Registrar salto
+      Serial.println("Boton presionado fisicamente. Publicando JUMP...");
       client.publish(topic, "JUMP");
-      Serial.println("¡Salto enviado!");
+      lastDebounceTime = millis();
     }
   }
-  lastButtonState = state;
-}`}
+  lastButtonState = reading;
+}
+`}
               </pre>
             </div>
           </div>
