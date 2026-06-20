@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-press-start: "Press Start 2P", "Courier New", Courier, monospace;
+}
+
+/* Aplicar la fuente pixel-art de forma predeterminada */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0f172a;
+  font-family: var(--font-press-start);
+  color: #ffffff;
+  image-rendering: pixelated;
+  user-select: none;
+}
+
+/* Efecto parpadeante sutil para textos de inicio */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-blink {
+  animation: blink 1.2s infinite;
+}
+
+/* Personalización del scrollbar para logs */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
