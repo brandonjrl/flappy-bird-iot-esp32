@@ -71,6 +71,11 @@ El circuito eléctrico requerido para conectar el botón al ESP32 es sumamente s
 
 Copia este código y cárgalo en tu ESP32 utilizando el **Arduino IDE** o **PlatformIO**. 
 
+> [!TIP]
+> **¿Tu PC no reconoce la placa al conectarla por USB?**  
+> Si al conectar tu ESP32 a la computadora no se detecta ningún puerto COM en tu IDE, es probable que requieras instalar los controladores del puente USB a UART. Puedes descargar e instalar los drivers oficiales desde aquí:  
+> 🔗 [Silicon Labs CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads)
+
 ### Dependencias del IDE de Arduino:
 1. Ve a **Herramientas > Administrar Bibliotecas**.
 2. Busca e instala la librería **PubSubClient** (de Nick O'Leary).
