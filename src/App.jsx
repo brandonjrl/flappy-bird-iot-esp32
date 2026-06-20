@@ -770,12 +770,11 @@ export default function App() {
             <div className="bg-slate-950 p-2.5 rounded font-mono text-[10px] text-slate-300 border border-slate-850 overflow-x-auto whitespace-pre">
 {`   [ ESP32 ]             [ BOTÓN FÍSICO ]
    +-------+                 +-------+
-   |  3V3  |-----------------| Terminal 1
+   |  GND  |-----------------| Terminal 1
    |       |                 |       |
    | GPIO4 |-----------------| Terminal 2
    +-------+                 +-------+
-   * Nota: Se configura INPUT_PULLUP en código`}
-            </div>
+   * Nota: Se configura INPUT_PULLUP en código`}</div>
 
             <h3 className="font-mono text-slate-200 font-bold mt-4">2. CÓDIGO DE ARDUINO</h3>
             <p className="text-[11px]">

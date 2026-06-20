@@ -46,7 +46,7 @@ El circuito eléctrico requerido para conectar el botón al ESP32 es sumamente s
            +-----------------------------+
            |           ESP32             |
            |                             |
-           |    [3V3]             [GND]  |
+           |    [GND]            [GPIO4] |
            +------|-----------------|----+
                   |                 |
                   |             +---+---+
@@ -54,11 +54,7 @@ El circuito eléctrico requerido para conectar el botón al ESP32 es sumamente s
                   |          [ BOTÓN ]  |
                   |             |       |
                   |             +---+---+
-                  |                 |
-           +------|-----------------+----+
-           |    [GPIO4]                  |
-           |             GPIO/Pins       |
-           +-----------------------------+
+                  +-----------------+
 ```
 * **Conexión**:
   - Conecta un terminal del botón al pin **GPIO4** del ESP32.
