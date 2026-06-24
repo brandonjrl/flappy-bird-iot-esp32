@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
+import SupabaseTest from './SupabaseTest';
 
 export default function App() {
   // --- Estados de React para la Interfaz de Usuario ---
@@ -845,6 +846,8 @@ export default function App() {
         </section>
 
       </div>
+
+      <SupabaseTest />
 
       <footer className="mt-12 text-center text-xs text-slate-600 font-mono">
         <p>Proyecto ESP-NOW de baja latencia con Web Serial API.</p>
