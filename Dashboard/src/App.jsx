@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import mqtt from 'mqtt';
 import { supabase } from './supabaseClient';
 import {
   Activity,
@@ -259,41 +258,20 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isPlaying, protocol, anomalyActive, currentScore, obstacleCount, highScore, connectionStatus]);
 
-  // Real-time MQTT connection
+  // Real-time Supabase connection
   useEffect(() => {
-    if (connectionStatus !== 'Connected') return;
+    if (connectionStatus !== 'Connected' || !supabase) return;
 
-    addLog('system', 'Connecting to MQTT broker for real-time telemetry...');
+    addLog('system', 'Connecting to Supabase Realtime for telemetry...');
     
-    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
-      clientId: 'flappy_dashboard_' + Math.random().toString(16).substring(2, 10),
-      clean: true,
-      connectTimeout: 5000,
-      reconnectPeriod: 3000,
+    const channel = supabase.channel('telemetry', {
+      config: {
+        broadcast: { ack: false },
+      },
     });
 
-    client.on('connect', () => {
-      addLog('system', 'Connected to MQTT broker (HiveMQ WSS). Waiting for telemetry...');
-      client.subscribe('workshop/flappy_bird/telemetry', (err) => {
-        if (!err) {
-          addLog('system', 'Subscribed to topic: workshop/flappy_bird/telemetry');
-        } else {
-          addLog('system', 'Error subscribing to telemetry topic.');
-        }
-      });
-      client.subscribe('workshop/flappy_bird/jump', (err) => {
-        if (!err) {
-          addLog('system', 'Subscribed to topic: workshop/flappy_bird/jump');
-        }
-      });
-    });
-
-    client.on('message', (topic, message) => {
-      const msgStr = message.toString();
-      if (topic === 'workshop/flappy_bird/telemetry') {
+    channel.on('broadcast', { event: 'telemetry' }, ({ payload: data }) => {
         try {
-          const data = JSON.parse(msgStr);
-          
           if (data.currentScore !== undefined) setCurrentScore(data.currentScore);
           if (data.highScore !== undefined) setHighScore(data.highScore);
           if (data.totalJumps !== undefined) setTotalJumps(data.totalJumps);
@@ -313,9 +291,7 @@ export default function App() {
           
           if (data.log) {
             addLog(data.logType || 'game', data.log);
-            if (data.log.includes("Collision registered") && data.currentScore > 0) {
-              saveScore(data.currentScore);
-            }
+            // Ya no guardamos el score desde aquí, project-espnow lo hace directamente a la BD
           }
 
           // Update histories just like the simulation did
@@ -348,24 +324,17 @@ export default function App() {
         } catch (e) {
           console.error("Failed to parse telemetry:", e);
         }
-      } else if (topic === 'workshop/flappy_bird/jump') {
-        if (msgStr === 'JUMP') {
-          addLog('control', 'Jump signal received (via MQTT topic)');
+    }).subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+            addLog('system', 'Connected to Supabase Realtime channel.');
+        } else {
+            addLog('system', `Supabase channel status: ${status}`);
         }
-      }
-    });
-
-    client.on('offline', () => {
-      addLog('system', 'MQTT connection lost. Reconnecting...');
-    });
-
-    client.on('error', (err) => {
-      addLog('system', `MQTT Error: ${err.message}`);
     });
 
     return () => {
-      addLog('system', 'Disconnecting MQTT client...');
-      client.end();
+      addLog('system', 'Disconnecting Supabase Realtime channel...');
+      supabase.removeChannel(channel);
     };
   }, [connectionStatus]);
 
@@ -419,6 +388,24 @@ export default function App() {
 
   useEffect(() => {
     fetchLeaderboard();
+    
+    // Subscribe to new scores
+    if (supabase) {
+        const scoresChannel = supabase.channel('scores-db-changes')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'scores' },
+            (payload) => {
+              addLog('system', `Nuevo récord detectado en BD: ${payload.new.score} pts por ${payload.new.player_name}`);
+              fetchLeaderboard(); // Refetch to get correct order
+            }
+          )
+          .subscribe();
+
+        return () => {
+            supabase.removeChannel(scoresChannel);
+        };
+    }
   }, []);
 
   const toggleConnection = () => {

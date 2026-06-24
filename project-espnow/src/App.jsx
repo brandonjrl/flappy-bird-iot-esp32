@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import mqtt from 'mqtt';
+import { supabase } from './lib/supabaseClient';
 import SupabaseTest from './SupabaseTest';
 
 export default function App() {
@@ -57,38 +57,41 @@ export default function App() {
   const collisionsRef = useRef(0);
   const startTimeRef = useRef(Date.now());
   const lastTelemetryTimeRef = useRef(0);
-  const mqttConnectedRef = useRef(false);
+  const supabaseConnectedRef = useRef(false);
 
   useEffect(() => {
-    addLog('Iniciando conexión MQTT en segundo plano para telemetría...');
+    addLog('Iniciando canal de Supabase Realtime para telemetría...');
     
-    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
-      clientId: 'flappy_espnow_web_' + Math.random().toString(16).substring(2, 10),
-      clean: true,
-      connectTimeout: 5000,
-      reconnectPeriod: 3000,
+    const channel = supabase.channel('telemetry', {
+      config: {
+        broadcast: { ack: false },
+      },
     });
 
-    client.on('connect', () => {
-      mqttConnectedRef.current = true;
-      addLog('Conexión MQTT para telemetría establecida.');
-    });
+    channel
+      .on('broadcast', { event: 'telemetry' }, (payload) => {
+        // En este cliente (juego) no necesitamos escuchar nuestra propia telemetría
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          supabaseConnectedRef.current = true;
+          addLog('Canal de Supabase Realtime establecido.');
+        } else {
+          supabaseConnectedRef.current = false;
+        }
+      });
 
-    client.on('offline', () => {
-      mqttConnectedRef.current = false;
-    });
-
-    window.mqttClientInstance = client;
+    window.supabaseChannelInstance = channel;
 
     return () => {
-      if (client) {
-        client.end();
+      if (channel) {
+        supabase.removeChannel(channel);
       }
     };
   }, []);
 
   const publishTelemetry = (logMessage = '', logType = 'game') => {
-    if (!window.mqttClientInstance || !mqttConnectedRef.current) return;
+    if (!window.supabaseChannelInstance || !supabaseConnectedRef.current) return;
     
     const now = Date.now();
     if (!logMessage && now - lastTelemetryTimeRef.current < 200) return;
@@ -121,7 +124,11 @@ export default function App() {
       logType: logType
     };
 
-    window.mqttClientInstance.publish('workshop/flappy_bird/telemetry', JSON.stringify(telemetry));
+    window.supabaseChannelInstance.send({
+      type: 'broadcast',
+      event: 'telemetry',
+      payload: telemetry
+    });
   };
 
   // --- Registrar Logs ---
@@ -188,6 +195,15 @@ export default function App() {
     } else {
       addLog(`Fin del juego. Puntuación: ${scoreRef.current} pts.`);
       publishTelemetry(`Collision registered with Obstacle #${pipesRef.current.length + scoreRef.current}. Session reset.`, 'game');
+    }
+
+    if (scoreRef.current > 0) {
+      // Guardar puntuación en Supabase si es mayor a 0
+      supabase.from('scores').insert([{ player_name: 'Jugador ESP-NOW', score: scoreRef.current }])
+        .then(({ error }) => {
+          if (error) console.error("Error guardando score:", error);
+          else addLog("Puntuación guardada en Supabase.");
+        });
     }
 
     for (let i = 0; i < 25; i++) {
