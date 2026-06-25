@@ -1,12 +1,12 @@
 # ⚡ Proyecto Flappy Bird - ESP-NOW & Web Serial Edition
 
-Este subproyecto implementa una arquitectura inalámbrica de ultra baja latencia utilizando dos placas ESP32 y la **Web Serial API** para conectarse al computador sin internet.
+Este subproyecto implementa una arquitectura inalámbrica local de ultra baja latencia utilizando dos placas **ESP32** comunicándose directamente por radiofrecuencia (ESP-NOW) y conectándose al navegador mediante la **Web Serial API** sin requerir conexión a Internet.
 
 ---
 
 ## 📡 Arquitectura de Red y Conexiones
 
-Dado que los navegadores web no pueden captar señales de radiofrecuencia directa, el sistema se divide en tres partes:
+Dado que los navegadores web no pueden captar señales de radiofrecuencia directa, el sistema se divide en tres componentes:
 
 ```text
  [Botón]
@@ -14,16 +14,16 @@ Dado que los navegadores web no pueden captar señales de radiofrecuencia direct
     ▼ (GPIO4 a GND)
 [ESP32 EMISOR]
     │
-    │  (Señal de Radio Directa ESP-NOW)
+    │  (Señal de Radio Directa ESP-NOW - Banda 2.4GHz)
     ▼  (Latencia: ~1ms / Sin Router WiFi)
-[ESP32 RECEPTOR] (Conectado USB a PC)
+[ESP32 RECEPTOR] (Conectado por USB a PC)
     │
-    ▼ (Serial.println("JUMP") por cable USB)
+    ▼ (Serial.println("JUMP") a 115200 baudios por cable USB)
 [NAVEGADOR WEB] (Web Serial API en Chrome/Edge: ~0ms)
 ```
 
 ### Conexión del Emisor:
-El pulsador físico se conecta entre **GPIO4** y **GND** en la placa emisora:
+El pulsador físico se conecta entre el pin **GPIO4** y **GND** en la placa emisora:
 ```text
            +-----------------------------+
            |       ESP32 EMISOR          |
@@ -40,7 +40,7 @@ El pulsador físico se conecta entre **GPIO4** y **GND** en la placa emisora:
 ```
 
 ### Conexión del Receptor:
-El receptor solo requiere estar conectado mediante su cable USB directamente a un puerto físico de tu computadora.
+El receptor solo requiere estar conectado mediante su cable USB directamente a un puerto físico de la computadora.
 
 ---
 
@@ -49,67 +49,65 @@ El receptor solo requiere estar conectado mediante su cable USB directamente a u
 Carga cada código en su respectiva placa mediante el **Arduino IDE**:
 
 ### 1. Firmware Emisor (`esp32_now_sender.ino`)
-Se carga en la placa con el botón físico. Configura la antena en modo de emisión directa (broadcast):
-* **Ruta:** [esp32_now_sender.ino](./esp32_firmware/esp32_now_sender/esp32_now_sender.ino)
+Configura la antena en modo estación y envía el mensaje de salto por broadcast a todos los dispositivos del canal:
+* **Código:** [esp32_now_sender.ino](./esp32_firmware/esp32_now_sender/esp32_now_sender.ino)
 
 ### 2. Firmware Receptor (`esp32_now_receiver.ino`)
-Se carga en la placa que va por USB a la PC. Recibe las ondas de radio y escribe en el puerto serie por USB:
-* **Ruta:** [esp32_now_receiver.ino](./esp32_firmware/esp32_now_receiver/esp32_now_receiver.ino)
+Recibe los comandos inalámbricos y los imprime al puerto serie a 115200 baudios:
+* **Código:** [esp32_now_receiver.ino](./esp32_firmware/esp32_now_receiver/esp32_now_receiver.ino)
 
 ---
 
-## 🛠️ Guía de Configuración e IDE y Solución de Problemas (ESP32-C3 Super Mini)
+## 🛠️ Guía de Configuración en Arduino IDE (ESP32-C3 Super Mini)
 
-Al programar la placa **ESP32-C3 Super Mini** (que usa una arquitectura RISC-V y un puerto USB integrado con CDC nativo), es muy común toparse con errores de compilación y carga. A continuación se detallan las soluciones a los problemas detectados:
-
-### 1. Error: `'USBSerial' was not declared in this scope`
-Si intentas compilar y obtienes este error:
-```text
-error: 'USBSerial' was not declared in this scope; did you mean 'Serial'?
-#define Serial USBSerial
-```
-**¿Por qué sucede?**
-En las versiones modernas del ESP32 Arduino Core, cuando activas la opción **USB CDC On Boot**, el compilador ya mapea de forma automática y nativa el objeto global `Serial` al puerto USB virtual del C3. Si intentas definir `#define Serial USBSerial`, la compilación falla porque `USBSerial` no está declarado en el ámbito global del núcleo actual.
-
-**Solución:**
-* **No agregues** la línea `#define Serial USBSerial`. Usa el código tal cual está en [esp32_now_receiver.ino](./esp32_firmware/esp32_now_receiver/esp32_now_receiver.ino), el cual utiliza únicamente el objeto `Serial` estándar.
-* Asegúrate de tener los ajustes correctos en el Arduino IDE descritos en el punto 3.
-
----
-
-### 2. Placa congelada al iniciar (`entry 0x403cbf10` en el Monitor Serie)
-Si el receptor imprime los logs del bootloader de la ROM y luego se queda congelado en la línea `entry` sin responder:
-* **Causa**: Compilaste el código seleccionando la placa genérica **ESP32 Dev Module** (arquitectura Xtensa) en lugar de una placa compatible con ESP32-C3 (arquitectura RISC-V). Esto hace que el procesador RISC-V intente ejecutar instrucciones Xtensa y se detenga instantáneamente.
-* **Solución**: Selecciona la placa **ESP32C3 Dev Module** (o **Lolin C3 Mini**) antes de compilar.
-
----
-
-### 3. Configuración Ideal en Arduino IDE (Herramientas / Tools)
-Para compilar y subir correctamente a la **ESP32-C3 Super Mini**, abre tu Arduino IDE y verifica la siguiente configuración en el menú **Herramientas (Tools)**:
+Para compilar y subir correctamente los códigos a la placa **ESP32-C3 Super Mini** (que cuenta con un puerto USB CDC integrado), asegúrate de realizar la siguiente configuración en el menú **Herramientas (Tools)** del Arduino IDE:
 
 | Opción / Ajuste | Configuración | Razón |
 | :--- | :--- | :--- |
 | **Placa (Board)** | `ESP32C3 Dev Module` (o `Lolin C3 Mini`) | Selecciona la arquitectura correcta (RISC-V). |
 | **USB CDC On Boot** | **`Enabled` (Activado)** | Redirige `Serial.println()` directamente al puerto USB de la placa. |
 | **Flash Mode** | **`DIO`** | Previene bucles infinitos de lectura SPI durante el arranque. |
-| **Flash Frequency** | **`40MHz`** | Evita errores de sincronización y lectura/escritura de memoria Flash. |
+| **Flash Frequency** | **`40MHz`** | Evita errores de sincronización y lectura de la memoria Flash. |
 | **Partition Scheme** | `Minimal SPIFFS` o `Default` | Configuración estándar de memoria de programa. |
+
+### Resolución de Problemas Comunes:
+- **Error: `'USBSerial' was not declared in this scope`**: No es necesario definir `#define Serial USBSerial`. El núcleo moderno de ESP32 mapea automáticamente el objeto `Serial` al activar **USB CDC On Boot**.
+- **Placa congelada al iniciar (`entry 0x403cbf10` en Monitor Serie)**: Compilaste usando la arquitectura Xtensa (ESP32 Dev Module) en vez de RISC-V (ESP32-C3 Dev Module). Vuelve a compilar seleccionando la placa correcta.
 
 ---
 
-## 🚀 Instalación y Ejecución de la Web
+## 🗄️ Integración con Supabase
+
+El juego interactúa de forma nativa con Supabase para dos funciones principales:
+1. **Leaderboard**: Guarda la puntuación del jugador al perder (en la tabla `scores`).
+2. **Telemetría en Tiempo Real**: Envía datos de telemetría (altura del ave, colisiones, latencia real, etc.) mediante **Supabase Realtime (Broadcast)** al canal `telemetry`.
+
+### Configuración de Supabase:
+1. Asegúrate de tener creadas las tablas `scores` y `test_table` en Supabase (ver esquemas SQL en el README raíz).
+2. Crea un archivo `.env.local` en la raíz de esta carpeta (`/project-espnow`):
+   ```env
+   VITE_SUPABASE_URL="https://tu-proyecto.supabase.co"
+   VITE_SUPABASE_ANON_KEY="tu-anon-key-publica"
+   ```
+
+---
+
+## 🚀 Instalación y Ejecución del Servidor Web
 
 1. Entra a la carpeta de este proyecto:
    ```bash
    cd project-espnow
    ```
-2. Instala los paquetes:
+2. Instala las dependencias:
    ```bash
    npm install
    ```
-3. Ejecuta el servidor local:
+3. Ejecuta el servidor de desarrollo local:
    ```bash
    npm run dev
    ```
-4. **Cómo Jugar**: Abre el juego en tu navegador Chrome o Edge, haz clic en el botón **🔌 CONECTAR RECEPTOR (COM)**, selecciona tu puerto serie (por ejemplo, `COM8`) y presiona el botón físico inalámbrico para saltar al instante.
-
+4. **Cómo Jugar**:
+   - Abre la web en tu navegador Chrome o Edge.
+   - Haz clic en **🔌 CONECTAR RECEPTOR (COM)**.
+   - Selecciona el puerto serie asignado al receptor ESP32.
+   - ¡Presiona el botón físico inalámbrico para saltar! También puedes jugar localmente presionando la **Barra Espaciadora** en el teclado.

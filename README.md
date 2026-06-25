@@ -1,53 +1,58 @@
 # 🎮 Taller Flappy Bird IoT - Guía de Proyectos
 
-Este espacio de trabajo contiene tres variaciones independientes y autocontenidas del clásico juego **Flappy Bird** integrado con microcontroladores **ESP32** para control por hardware, organizadas según el protocolo de red y latencia deseados.
+Este espacio de trabajo contiene un ecosistema de proyectos diseñados para experimentar con Internet de las Cosas (IoT), protocolos de comunicación inalámbrica y telemetría industrial en tiempo real. 
+
+Utilizando el clásico juego **Flappy Bird** y placas de desarrollo **ESP32**, explorarás arquitecturas locales de ultra baja latencia frente a arquitecturas distribuidas en la nube.
 
 ---
 
-## 📂 Directorios de Proyectos
+## 📂 Estructura del Workspace
 
-Navega a la carpeta correspondiente según el modo en el que desees trabajar:
+El taller se divide en tres proyectos de software independientes y una carpeta reservada para tus propios desarrollos:
+
+```text
+Workshop/
+├── 📡 project-mqtt/        # Edición Cloud utilizando un broker MQTT externo (HiveMQ)
+├── ⚡ project-espnow/      # Edición Local de ultra baja latencia con ESP-NOW + Web Serial
+├── 📊 Dashboard/           # Panel industrial para visualizar KPIs de hardware y leaderboard
+└── 📁 project-final/       # Directorio reservado para tu proyecto final de integración
+```
 
 ### 1. [📡 project-mqtt](./project-mqtt/README.md)
-* **Descripción**: Control inalámbrico de Flappy Bird utilizando un broker público de MQTT (HiveMQ) sobre WebSockets seguros.
-* **Latencia**: Media (~150 - 500 ms) dependiente de la conexión a Internet.
-* **Hardware necesario**: 1x ESP32 + 1x Pulsador físico.
-* **Ideal para**: Demostraciones a larga distancia (por ejemplo, si el ESP32 está en un sitio geográfico distinto de la computadora).
+- **Descripción**: Control inalámbrico a través de Internet. El ESP32 se conecta al WiFi local y envía la señal de salto a un broker público de MQTT en la nube. El juego en el navegador escucha el broker por WebSockets.
+- **Latencia**: Media-alta (~150 - 500 ms) dependiente de tu conexión a Internet.
+- **Hardware necesario**: 1x ESP32 + 1x Pulsador físico.
+- **Ideal para**: Demostraciones remotas (el control y la pantalla pueden estar en continentes distintos).
 
 ### 2. [⚡ project-espnow](./project-espnow/README.md)
-* **Descripción**: Control inalámbrico local de ultra baja latencia utilizando dos placas ESP32 comunicándose por radiofrecuencia (ESP-NOW) y conectándose al navegador mediante la **Web Serial API**.
-* **Latencia**: Virtualmente cero (~0.1 - 2 ms). ¡Respuesta visual inmediata!
-* **Hardware necesario**: 2x ESP32 + 1x Pulsador físico.
-* **Ideal para**: Un juego inalámbrico altamente competitivo donde la velocidad y los reflejos son críticos.
+- **Descripción**: Control inalámbrico local de latencia casi nula. Un ESP32 emisor envía el comando por radiofrecuencia (ESP-NOW) a un ESP32 receptor conectado por USB a tu PC. El juego lee el puerto serie directo con la Web Serial API.
+- **Latencia**: Virtualmente imperceptible (~1 - 2 ms). Respuesta inmediata.
+- **Hardware necesario**: 2x ESP32 + 1x Pulsador físico.
+- **Ideal para**: Competiciones y juego preciso donde cada milisegundo cuenta.
 
-### 3. [📊 Dashboard](./Dashboard/)
-* **Descripción**: Panel de control industrial 4.0 en tiempo real para visualizar KPIs, telemetría y gráficos del juego, integrado con **Supabase** para persistir puntuaciones.
-* **Características**: Visualización de latencia, tasa de éxito de paquetes, estado de batería de ESP32, altitud en tiempo real del ave y tabla de clasificación (Leaderboard).
+### 3. [📊 Dashboard](./Dashboard/README.md)
+- **Descripción**: Panel de monitoreo tipo SCADA / Industria 4.0. Se conecta con **Supabase** para recibir telemetría de vuelo del ave en vivo (Broadcast) y sincronizar una tabla de clasificación (Leaderboard) global.
+- **Características**: Gráficas de rendimiento en tiempo real, latencias históricas, señal WiFi (dBm), temperatura/batería simulada del dispositivo y consola de logs.
+---
 
-### 4. [📁 project-final](./project-final/)
-* **Descripción**: Carpeta de proyecto vacía reservada para tus propios desarrollos, integraciones personalizadas o futuros experimentos.
-* **Hardware necesario**: Libre.
+## 🏎️ Tabla Comparativa de Conectividad
+
+| Módulo/Edición | Protocolo Primario | Latencia Promedio | Depende de Internet | Placas Requeridas |
+| :--- | :--- | :--- | :--- | :--- |
+| **`project-espnow`** | ESP-NOW + Web Serial | **~1-2 ms** | ❌ No | 2x ESP32 + Botón |
+| **Teclado / Local** | Entrada USB HID estándar | **~4-8 ms** | ❌ No | Ninguna (Teclado) |
+| **`project-mqtt`** | MQTT sobre WebSockets | **~150-400 ms** |  Sí | 1x ESP32 + Botón |
 
 ---
 
-## 🏎️ Tabla Comparativa de Latencia
+## 🗄️ Integración con Supabase (Base de Datos e Hilos en Tiempo Real)
 
-| Proyecto | Conectividad | Latencia Promedio | Hardware Requerido | Depende de Internet |
-|---|---|---|---|---|
-| **ESP-NOW + Web Serial** | Radio Directa + Cable USB | **~1-2 ms** | 2x ESP32 + Botón | ❌ No |
-| **Teclado / Mouse Local** | USB / HID | **~4-8 ms** | Ninguno (Teclado) | ❌ No |
-| **MQTT WebSockets** | WiFi Local + Broker Nube | **~150-400 ms** | 1x ESP32 + Botón |  Sí |
+Tanto la edición `project-espnow` como el `Dashboard` utilizan **Supabase** como backend en la nube para persistir récords de puntuación y habilitar canales de comunicación web interactivos.
 
----
+### 1. Estructura de Tablas SQL
+Crea las siguientes tablas ejecutando estas consultas en el **SQL Editor** de tu panel de Supabase:
 
-## 🗄️ Integración con Supabase (Base de Datos)
-
-El Dashboard está configurado para conectarse a **Supabase** para registrar récords en tiempo real. 
-
-### 1. Estructuras de las Tablas SQL
-Crea las siguientes tablas en el SQL Editor de tu proyecto en Supabase:
-
-#### A. Tabla de Puntuaciones (Dashboard)
+#### A. Tabla de Puntuaciones (`scores`)
 ```sql
 create table public.scores (
   id bigint generated by default as identity primary key,
@@ -56,13 +61,13 @@ create table public.scores (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Habilitar seguridad de nivel de fila (RLS) pública para lectura/escritura
+-- Habilitar seguridad de nivel de fila (RLS) para lectura/escritura pública
 alter table public.scores enable row level security;
 create policy "Allow public read access" on public.scores for select using (true);
 create policy "Allow public insert access" on public.scores for insert with check (true);
 ```
 
-#### B. Tabla de Prueba (project-espnow)
+#### B. Tabla de Pruebas (`test_table`)
 ```sql
 create table public.test_table (
   id uuid default gen_random_uuid() primary key,
@@ -70,40 +75,39 @@ create table public.test_table (
   creado_en timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Habilitar seguridad de nivel de fila (RLS) pública para la tabla de prueba
+-- Habilitar RLS pública para depuración rápida de inserciones
 alter table public.test_table enable row level security;
 create policy "Allow public read access" on public.test_table for select using (true);
 create policy "Allow public insert access" on public.test_table for insert with check (true);
 ```
 
-### 2. Variables de Entorno
-Crea un archivo `.env.local` en la raíz de las carpetas `Dashboard` y/o `project-espnow` con tus credenciales de proyecto:
+### 2. Configuración de Variables de Entorno
+Crea un archivo `.env.local` tanto en la raíz de `Dashboard/` como de `project-espnow/` para enlazar tus servicios:
 ```env
-VITE_SUPABASE_URL="https://tu-proyecto.supabase.co"
-VITE_SUPABASE_ANON_KEY="tu-anon-key-publica"
+VITE_SUPABASE_URL="https://tu-proyecto-id.supabase.co"
+VITE_SUPABASE_ANON_KEY="tu-anon-key-publica-de-supabase"
 ```
 
-### 3. Telemetría en Tiempo Real (Supabase Broadcast)
-El proyecto ha sido actualizado para **reemplazar el uso de MQTT** por **Supabase Realtime Broadcast**. 
-- **Baja latencia**: Los datos del vuelo del ave, saltos y caídas se envían directamente de cliente a cliente a través de los servidores Edge de Supabase sin necesidad de guardarse en la base de datos de PostgreSQL.
-- **Leaderboard reactivo**: El Dashboard está suscrito a la tabla `scores` usando la funcionalidad `postgres_changes`. Cuando pierdes en `project-espnow` y se guarda tu récord en la tabla, el Leaderboard se actualiza al instante sin recargar la página.
+### 3. Telemetría Reactiva (Supabase Broadcast)
+- Los datos de vuelo, saltos y KPIs que ves en el Dashboard no se graban en la base de datos de manera constante para evitar saturación de almacenamiento. En su lugar, viajan a través de los Edge Servers de Supabase usando **Realtime Broadcast** de forma instantánea.
+- El Leaderboard del Dashboard se auto-actualiza reactivamente escuchando eventos `postgres_changes` en la tabla `scores`. En el momento exacto en que un jugador pierde y el juego inserta su score, el Dashboard reorganiza la tabla de posiciones.
 
 ---
 
-## 🛠️ Instrucciones Generales
+## 🚀 Guía Rápida de Inicio
 
-Cada una de las carpetas es un proyecto web independiente. Para arrancar `Dashboard`, `project-mqtt` o `project-espnow`:
-1. Abre tu terminal e ingresa a la carpeta deseada:
+Cada proyecto web se inicia de forma independiente. Por ejemplo, para arrancar cualquiera de ellos (`project-espnow`, `project-mqtt` o `Dashboard`):
+
+1. Abre una terminal en la carpeta correspondiente:
    ```bash
-   cd Dashboard        # O project-mqtt, o project-espnow
+   cd project-espnow
    ```
-2. Instala las dependencias:
+2. Instala las dependencias necesarias:
    ```bash
    npm install
    ```
-3. Inicia el servidor local de desarrollo:
+3. Ejecuta el servidor de desarrollo en modo local:
    ```bash
    npm run dev
    ```
-4. Abre la dirección indicada (usualmente `http://localhost:5173`) en tu navegador.
-
+4. Abre tu navegador en la URL indicada por la consola (usualmente [http://localhost:5173](http://localhost:5173)).

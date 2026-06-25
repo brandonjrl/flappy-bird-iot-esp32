@@ -62,7 +62,7 @@ export default function App() {
 
   const groundOffsetRef = useRef(0);
 
-  // --- Telemetría para Dashboard en tiempo real (MQTT en segundo plano) ---
+  // --- Telemetría para Dashboard en tiempo real (Supabase en segundo plano) ---
   const totalJumpsRef = useRef(0);
   const collisionsRef = useRef(0);
   const startTimeRef = useRef(Date.now());
