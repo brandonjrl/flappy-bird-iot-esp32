@@ -15,7 +15,6 @@ Workshop/
 ├── 📡 project-mqtt/        # Edición Cloud utilizando un broker MQTT externo (HiveMQ)
 ├── ⚡ project-espnow/      # Edición Local de ultra baja latencia con ESP-NOW + Web Serial
 ├── 📊 Dashboard/           # Panel industrial para visualizar KPIs de hardware y leaderboard
-└── 📁 project-final/       # Directorio reservado para tu proyecto final de integración
 ```
 
 ### 1. [📡 project-mqtt](./project-mqtt/README.md)
