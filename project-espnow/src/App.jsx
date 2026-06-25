@@ -12,17 +12,25 @@ export default function App() {
   const [serialStatus, setSerialStatus] = useState('disconnected'); // disconnected, connected
   const [serialLogs, setSerialLogs] = useState([]);
   const [showConsole, setShowConsole] = useState(true);
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem('flappyPlayerName') || 'Jugador 1');
 
   // --- Refs para el Loop del Juego ---
   const canvasRef = useRef(null);
   const gameStateRef = useRef('START');
   const scoreRef = useRef(0);
   const highScoreRef = useRef(highScore);
+  const playerNameRef = useRef(playerName);
   const pipesRef = useRef([]);
   const particlesRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const frameCountRef = useRef(0);
+  const framesSinceLastSpawnRef = useRef(0);
   const requestRef = useRef(null);
+
+  useEffect(() => {
+    playerNameRef.current = playerName;
+    localStorage.setItem('flappyPlayerName', playerName);
+  }, [playerName]);
 
   // Refs de Web Serial API para control de puerto y lector
   const portRef = useRef(null);
@@ -33,11 +41,13 @@ export default function App() {
   const CANVAS_WIDTH = 400;
   const CANVAS_HEIGHT = 550;
   const GROUND_HEIGHT = 70;
-  const GRAVITY = 0.26;
+  const GRAVITY = 0.20;
   const JUMP_STRENGTH = -5.2;
-  const PIPE_SPEED = 1.6;
-  const PIPE_GAP = 175;
-  const PIPE_SPAWN_RATE = 140;
+
+  // Dificultad Dinámica (se calcula en base al score actual)
+  const getPipeSpeed = () => Math.min(0.65 + (scoreRef.current * 0.06), 3.5);
+  const getPipeGap = () => Math.max(250 - (scoreRef.current * 3.0), 120);
+  const getPipeSpawnRate = () => Math.max(220 - (scoreRef.current * 4), 70);
 
   // Datos del Ave
   const birdRef = useRef({
@@ -61,7 +71,7 @@ export default function App() {
 
   useEffect(() => {
     addLog('Iniciando canal de Supabase Realtime para telemetría...');
-    
+
     const channel = supabase.channel('telemetry', {
       config: {
         broadcast: { ack: false },
@@ -92,7 +102,7 @@ export default function App() {
 
   const publishTelemetry = (logMessage = '', logType = 'game') => {
     if (!window.supabaseChannelInstance || !supabaseConnectedRef.current) return;
-    
+
     const now = Date.now();
     if (!logMessage && now - lastTelemetryTimeRef.current < 200) return;
     lastTelemetryTimeRef.current = now;
@@ -142,7 +152,7 @@ export default function App() {
     birdRef.current.velocity = JUMP_STRENGTH;
     totalJumpsRef.current += 1;
     publishTelemetry('Jump signal triggered via GPIO-12 hardware interrupt', 'control');
-    
+
     // Partículas de salto
     for (let i = 0; i < 5; i++) {
       particlesRef.current.push({
@@ -165,7 +175,7 @@ export default function App() {
     scoreRef.current = 0;
     setScore(0);
     startTimeRef.current = Date.now();
-    
+
     birdRef.current.y = 200;
     birdRef.current.velocity = 0;
     birdRef.current.angle = 0;
@@ -175,6 +185,7 @@ export default function App() {
     particlesRef.current = [];
     floatingTextsRef.current = [];
     frameCountRef.current = 0;
+    framesSinceLastSpawnRef.current = 0;
 
     spawnPipe();
     addLog('Juego iniciado.');
@@ -199,7 +210,7 @@ export default function App() {
 
     if (scoreRef.current > 0) {
       // Guardar puntuación en Supabase si es mayor a 0
-      supabase.from('scores').insert([{ player_name: 'Jugador ESP-NOW', score: scoreRef.current }])
+      supabase.from('scores').insert([{ player_name: playerNameRef.current, score: scoreRef.current }])
         .then(({ error }) => {
           if (error) console.error("Error guardando score:", error);
           else addLog("Puntuación guardada en Supabase.");
@@ -222,9 +233,10 @@ export default function App() {
 
   const spawnPipe = () => {
     const minHeight = 40;
-    const maxHeight = CANVAS_HEIGHT - GROUND_HEIGHT - PIPE_GAP - minHeight;
+    const currentGap = getPipeGap();
+    const maxHeight = CANVAS_HEIGHT - GROUND_HEIGHT - currentGap - minHeight;
     const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
-    const bottomHeight = CANVAS_HEIGHT - GROUND_HEIGHT - topHeight - PIPE_GAP;
+    const bottomHeight = CANVAS_HEIGHT - GROUND_HEIGHT - topHeight - currentGap;
 
     pipesRef.current.push({
       x: CANVAS_WIDTH,
@@ -295,14 +307,18 @@ export default function App() {
       // Tubos
       if (state === 'PLAYING') {
         frameCountRef.current++;
-        if (frameCountRef.current % PIPE_SPAWN_RATE === 0) {
+        framesSinceLastSpawnRef.current++;
+        if (framesSinceLastSpawnRef.current >= getPipeSpawnRate()) {
           spawnPipe();
+          framesSinceLastSpawnRef.current = 0;
         }
       }
 
+      const currentPipeSpeed = getPipeSpeed();
+
       pipesRef.current.forEach((pipe) => {
         if (state === 'PLAYING') {
-          pipe.x -= PIPE_SPEED;
+          pipe.x -= currentPipeSpeed;
         }
 
         // Estilo de Tubo Retro-Neon (Morado/Cian)
@@ -313,7 +329,7 @@ export default function App() {
         ctx.strokeRect(pipe.x, -5, pipe.width, pipe.topHeight + 5);
         ctx.fillStyle = '#22d3ee';
         ctx.fillRect(pipe.x + 4, 0, 5, pipe.topHeight);
-        
+
         ctx.fillStyle = '#06b6d4';
         ctx.fillRect(pipe.x - 4, pipe.topHeight - 20, pipe.width + 8, 20);
         ctx.strokeRect(pipe.x - 4, pipe.topHeight - 20, pipe.width + 8, 20);
@@ -325,7 +341,7 @@ export default function App() {
         ctx.strokeRect(pipe.x, bottomY, pipe.width, pipe.bottomHeight + 5);
         ctx.fillStyle = '#22d3ee';
         ctx.fillRect(pipe.x + 4, bottomY, 5, pipe.bottomHeight);
-        
+
         ctx.fillStyle = '#06b6d4';
         ctx.fillRect(pipe.x - 4, bottomY, pipe.width + 8, 20);
         ctx.strokeRect(pipe.x - 4, bottomY, pipe.width + 8, 20);
@@ -462,7 +478,7 @@ export default function App() {
 
       // Suelo
       if (state === 'PLAYING') {
-        groundOffsetRef.current = (groundOffsetRef.current - PIPE_SPEED) % 24;
+        groundOffsetRef.current = (groundOffsetRef.current - currentPipeSpeed) % 24;
       }
       const groundY = CANVAS_HEIGHT - GROUND_HEIGHT;
 
@@ -523,19 +539,19 @@ export default function App() {
       const port = await navigator.serial.requestPort();
       portRef.current = port;
       setSerialStatus('connecting');
-      
+
       await port.open({ baudRate: 115200 });
-      
+
       // Secuencia de reinicio físico (DTR/RTS) para sacar al ESP32 del modo Bootloader
       // 1. Resetear (EN = LOW): DTR = false, RTS = true
       await port.setSignals({ dataTerminalReady: false, requestToSend: true });
       await new Promise((resolve) => setTimeout(resolve, 150));
       // 2. Arrancar (EN = HIGH, IO0 = HIGH): DTR = false, RTS = false
       await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-      
+
       setSerialStatus('connected');
       addLog('Puerto serie COM conectado y placa reiniciada.');
-      
+
       // Lanzar bucle de lectura asíncrono
       readSerial(port);
     } catch (err) {
@@ -546,17 +562,17 @@ export default function App() {
 
   const disconnectSerial = async () => {
     isReadingRef.current = false;
-    
+
     if (readerRef.current) {
       try {
         await readerRef.current.cancel();
-      } catch (err) {}
+      } catch (err) { }
     }
 
     if (portRef.current) {
       try {
         await portRef.current.close();
-      } catch (err) {}
+      } catch (err) { }
     }
 
     portRef.current = null;
@@ -619,7 +635,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center py-6 px-4 font-sans select-none">
-      
+
       {/* HEADER */}
       <header className="text-center mb-8 max-w-4xl w-full">
         <h1 className="text-2xl md:text-4xl text-cyan-400 font-bold tracking-wider font-mono border-b-4 border-cyan-500 pb-3 mb-2 flex items-center justify-center gap-3">
@@ -632,89 +648,111 @@ export default function App() {
 
       {/* DISEÑO EN COLUMNAS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl w-full items-start">
-        
-        {/* PANEL IZQUIERDO: CONEXIÓN SERIE USB */}
-        <section className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h2 className="text-sm font-semibold tracking-wider text-slate-300 font-mono flex items-center gap-2">
-              🔌 PUERTO SERIE USB
-            </h2>
-            
-            <div className="flex items-center gap-2">
-              <span className={`h-3.5 w-3.5 rounded-full inline-block ${
-                serialStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' :
-                serialStatus === 'connecting' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' :
-                'bg-red-500 shadow-[0_0_8px_#ef4444]'
-              }`} />
-              <span className="text-xs font-mono uppercase font-bold text-slate-300">
-                {serialStatus === 'connected' ? 'Conectado' : serialStatus === 'connecting' ? 'Abriendo' : 'Desconectado'}
-              </span>
-            </div>
-          </div>
 
-          <div className="bg-slate-950 p-3 rounded-lg text-xs font-mono border border-slate-800 flex flex-col gap-2">
-            <div>
-              <span className="text-slate-500">API del Navegador:</span>{' '}
-              <span className="text-emerald-400 font-bold">Web Serial API</span>
+        {/* COLUMNA IZQUIERDA */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          {/* PANEL JUGADOR */}
+          <section className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-sm font-semibold tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                👤 JUGADOR
+              </h2>
             </div>
-            <div>
-              <span className="text-slate-500">Velocidad (Baudios):</span>{' '}
-              <span className="text-slate-300 font-bold">115200</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Dispositivo Esperado:</span>{' '}
-              <span className="text-cyan-400 font-bold">ESP32 (Receptor)</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            {serialStatus !== 'connected' ? (
-              <button
-                onClick={connectSerial}
-                className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono py-3.5 px-4 rounded-lg font-black border-b-4 border-cyan-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide cursor-pointer"
-              >
-                🔌 CONECTAR RECEPTOR (COM)
-              </button>
-            ) : (
-              <button
-                onClick={disconnectSerial}
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-mono py-3.5 px-4 rounded-lg font-bold border-b-4 border-red-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide cursor-pointer"
-              >
-                🚫 DESCONECTAR PUERTO
-              </button>
-            )}
-            
-            <button
-              onClick={() => setShowConsole(!showConsole)}
-              className="text-slate-400 hover:text-slate-200 text-xs font-mono underline text-center block cursor-pointer"
-            >
-              {showConsole ? 'Ocultar Monitor Serie' : 'Mostrar Monitor Serie'}
-            </button>
-          </div>
-
-          {/* Consola de Logs */}
-          {showConsole && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-bold text-slate-500 font-mono">MONITOR SERIE WEB</h3>
-              <div className="bg-black text-cyan-400 p-3 rounded-lg h-48 overflow-y-auto font-mono text-xs border border-slate-800 leading-relaxed scroll-smooth flex flex-col-reverse">
-                {serialLogs.length === 0 ? (
-                  <p className="text-slate-600 italic">Esperando conexión...</p>
-                ) : (
-                  serialLogs.map((log, idx) => (
-                    <div key={idx} className="border-b border-slate-905 py-0.5 last:border-b-0">
-                      {log}
-                    </div>
-                  ))
-                )}
+              <label className="text-xs font-mono text-slate-400">Nombre para el Leaderboard:</label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                maxLength={15}
+                className="bg-slate-950 border border-slate-700 text-cyan-400 font-mono text-sm rounded-lg p-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 w-full"
+                placeholder="Tu nombre..."
+              />
+            </div>
+          </section>
+
+          {/* PANEL CONEXIÓN SERIE USB */}
+          <section className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-sm font-semibold tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                🔌 PUERTO SERIE USB
+              </h2>
+
+              <div className="flex items-center gap-2">
+                <span className={`h-3.5 w-3.5 rounded-full inline-block ${serialStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' :
+                    serialStatus === 'connecting' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' :
+                      'bg-red-500 shadow-[0_0_8px_#ef4444]'
+                  }`} />
+                <span className="text-xs font-mono uppercase font-bold text-slate-300">
+                  {serialStatus === 'connected' ? 'Conectado' : serialStatus === 'connecting' ? 'Abriendo' : 'Desconectado'}
+                </span>
               </div>
             </div>
-          )}
-        </section>
+
+            <div className="bg-slate-950 p-3 rounded-lg text-xs font-mono border border-slate-800 flex flex-col gap-2">
+              <div>
+                <span className="text-slate-500">API del Navegador:</span>{' '}
+                <span className="text-emerald-400 font-bold">Web Serial API</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Velocidad (Baudios):</span>{' '}
+                <span className="text-slate-300 font-bold">115200</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Dispositivo Esperado:</span>{' '}
+                <span className="text-cyan-400 font-bold">ESP32 (Receptor)</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {serialStatus !== 'connected' ? (
+                <button
+                  onClick={connectSerial}
+                  className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono py-3.5 px-4 rounded-lg font-black border-b-4 border-cyan-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide cursor-pointer"
+                >
+                  🔌 CONECTAR RECEPTOR (COM)
+                </button>
+              ) : (
+                <button
+                  onClick={disconnectSerial}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-mono py-3.5 px-4 rounded-lg font-bold border-b-4 border-red-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide cursor-pointer"
+                >
+                  🚫 DESCONECTAR PUERTO
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowConsole(!showConsole)}
+                className="text-slate-400 hover:text-slate-200 text-xs font-mono underline text-center block cursor-pointer"
+              >
+                {showConsole ? 'Ocultar Monitor Serie' : 'Mostrar Monitor Serie'}
+              </button>
+            </div>
+
+            {/* Consola de Logs */}
+            {showConsole && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-bold text-slate-500 font-mono">MONITOR SERIE WEB</h3>
+                <div className="bg-black text-cyan-400 p-3 rounded-lg h-48 overflow-y-auto font-mono text-xs border border-slate-800 leading-relaxed scroll-smooth flex flex-col-reverse">
+                  {serialLogs.length === 0 ? (
+                    <p className="text-slate-600 italic">Esperando conexión...</p>
+                  ) : (
+                    serialLogs.map((log, idx) => (
+                      <div key={idx} className="border-b border-slate-905 py-0.5 last:border-b-0">
+                        {log}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
 
         {/* PANEL CENTRAL: GABINETE ARCADE & CANVAS */}
         <section className="lg:col-span-4 flex flex-col items-center">
           <div className="relative bg-slate-900 border-4 border-slate-700 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] max-w-[448px] w-full flex flex-col items-center overflow-hidden">
-            
+
             {/* Marquesina Superior */}
             <div className="w-full bg-gradient-to-r from-cyan-600 via-purple-600 to-cyan-600 text-center py-2.5 rounded-t-xl mb-4 border-b-4 border-slate-950 shadow-inner flex flex-col gap-0.5">
               <span className="font-mono text-slate-950 font-black text-lg tracking-widest animate-pulse">
@@ -754,7 +792,7 @@ export default function App() {
                     <p className="text-[9px] font-mono text-slate-300 mb-6 uppercase tracking-wider">
                       ESP-NOW + Web Serial
                     </p>
-                    
+
                     <div className="flex flex-col items-center gap-3 mb-6">
                       <div className="w-24 h-6 border-2 border-dashed border-cyan-400 rounded-full flex items-center justify-center bg-slate-800 text-[8px] font-mono text-cyan-300 animate-bounce">
                         ESPACIO
@@ -840,9 +878,9 @@ export default function App() {
             <p>
               Esta arquitectura elimina la latencia de internet utilizando dos módulos de radiofrecuencia directa entre placas:
             </p>
-            
+
             <div className="bg-slate-950 p-3 rounded font-mono text-[9px] text-slate-300 border border-slate-850 leading-relaxed overflow-x-auto whitespace-pre">
-{` [Botón]
+              {` [Botón]
     │
     ▼ (GPIO4 a GND)
 [ESP32 EMISOR]

@@ -359,7 +359,7 @@ export default function App() {
         .from('scores')
         .select('*')
         .order('score', { ascending: false })
-        .limit(5);
+        .limit(10);
       if (!error && data) {
         setLeaderboard(data);
       }
@@ -394,9 +394,11 @@ export default function App() {
         const scoresChannel = supabase.channel('scores-db-changes')
           .on(
             'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'scores' },
+            { event: '*', schema: 'public', table: 'scores' },
             (payload) => {
-              addLog('system', `Nuevo récord detectado en BD: ${payload.new.score} pts por ${payload.new.player_name}`);
+              const playerName = payload.new?.player_name || payload.old?.player_name || 'Desconocido';
+              const score = payload.new?.score || payload.old?.score || 0;
+              addLog('system', `Cambio de puntaje detectado en BD: ${score} pts por ${playerName}`);
               fetchLeaderboard(); // Refetch to get correct order
             }
           )
@@ -795,23 +797,7 @@ export default function App() {
           </h3>
           
           <div style={{ marginBottom: '14px' }}>
-            <label style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px', letterSpacing: '0.5px' }}>Player Name</label>
-            <input 
-              type="text" 
-              value={playerName} 
-              onChange={(e) => setPlayerName(e.target.value)}
-              style={{ 
-                width: '100%', 
-                background: 'rgba(0,0,0,0.3)', 
-                border: '1px solid rgba(255,255,255,0.1)', 
-                borderRadius: '6px', 
-                padding: '6px 10px', 
-                color: 'white', 
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.75rem',
-                outline: 'none'
-              }} 
-            />
+            {/* The player name input was removed from here because the name is now managed directly in the game (project-espnow) */}
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
