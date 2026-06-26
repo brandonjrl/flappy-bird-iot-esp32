@@ -4,17 +4,19 @@ Este espacio de trabajo contiene un ecosistema de proyectos diseñados para expe
 
 Utilizando el clásico juego **Flappy Bird** y placas de desarrollo **ESP32**, explorarás arquitecturas locales de ultra baja latencia frente a arquitecturas distribuidas en la nube.
 
+> 📝 **Nota**: Puedes consultar el [prompt original utilizado para la generación del clon de Flappy Bird aquí](./PROMPT.md).
+
 ---
 
 ## 📂 Estructura del Workspace
 
-El taller se divide en tres proyectos de software independientes y una carpeta reservada para tus propios desarrollos:
+El taller se divide en tres proyectos de software independientes:
 
 ```text
 Workshop/
 ├── 📡 project-mqtt/        # Edición Cloud utilizando un broker MQTT externo (HiveMQ)
 ├── ⚡ project-espnow/      # Edición Local de ultra baja latencia con ESP-NOW + Web Serial
-├── 📊 Dashboard/           # Panel industrial para visualizar KPIs de hardware y leaderboard
+└── 📊 Dashboard/           # Panel industrial para visualizar KPIs de hardware y leaderboard
 ```
 
 ### 1. [📡 project-mqtt](./project-mqtt/README.md)
