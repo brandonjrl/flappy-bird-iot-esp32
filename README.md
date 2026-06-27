@@ -50,8 +50,39 @@ Workshop/
 
 Tanto la edición `project-espnow` como el `Dashboard` utilizan **Supabase** como backend en la nube para persistir récords de puntuación y habilitar canales de comunicación web interactivos.
 
-### 1. Estructura de Tablas SQL
+### 1. ¿Cómo crear un proyecto en Supabase?
+1. Ingresa a [Supabase](https://supabase.com/) y regístrate o inicia sesión.
+2. Haz clic en el botón **"New Project"** y selecciona tu organización (o crea una nueva).
+3. Ingresa el **Name** (Nombre) del proyecto, define una **Database Password** (Contraseña) segura y elige la **Region** más cercana a ti.
+4. Haz clic en **"Create new project"** y espera unos minutos a que se aprovisione la infraestructura.
+5. Una vez creado, ve al menú lateral izquierdo, selecciona **Project Settings** (el ícono de engranaje) y entra al apartado **API**. Allí encontrarás tu `Project URL` y tu `anon public key`, que usarás en el paso de Variables de Entorno.
+
+### 2. ¿Cómo se hace la conexión en el código?
+Para que el proyecto en React se comunique con Supabase, se utiliza la librería oficial `@supabase/supabase-js`. 
+
+El cliente se inicializa leyendo las variables de entorno. Dependiendo del proyecto, encontrarás la configuración en:
+- En `Dashboard`: archivo `src/supabaseClient.js`
+- En `project-espnow`: archivo `src/lib/supabaseClient.js`
+
+El código de inicialización es el siguiente:
+
+```javascript
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Se crea y exporta el cliente para utilizarlo en la aplicación
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+```
+
+Luego, en cualquier componente que lo requiera, se importa `supabase` para realizar consultas a la base de datos o suscribirse a eventos en tiempo real.
+
+### 3. Estructura de Tablas SQL
 Crea las siguientes tablas ejecutando estas consultas en el **SQL Editor** de tu panel de Supabase:
+
+> [!TIP]
+> Para facilitar este proceso, puedes abrir el archivo [`supabase_schema.sql`](./supabase_schema.sql) que está en la raíz de este proyecto. Simplemente copia su contenido y pégalo directamente en el editor SQL de Supabase para crear la base de datos de inmediato.
 
 #### A. Tabla de Puntuaciones (`scores`)
 ```sql
@@ -82,14 +113,14 @@ create policy "Allow public read access" on public.test_table for select using (
 create policy "Allow public insert access" on public.test_table for insert with check (true);
 ```
 
-### 2. Configuración de Variables de Entorno
-Crea un archivo `.env.local` tanto en la raíz de `Dashboard/` como de `project-espnow/` para enlazar tus servicios:
+### 4. Configuración de Variables de Entorno
+Crea un archivo de variables de entorno en la raíz de cada proyecto (`.env` para el `Dashboard` y `.env.local` para `project-espnow`) e incluye las credenciales exactas del proyecto:
 ```env
-VITE_SUPABASE_URL="https://tu-proyecto-id.supabase.co"
-VITE_SUPABASE_ANON_KEY="tu-anon-key-publica-de-supabase"
+VITE_SUPABASE_URL="https://pbsyaszrbckyxqqucelb.supabase.co"
+VITE_SUPABASE_ANON_KEY="sb_publishable_IZ76KqkNxaoMiSReMOtaVA_On7WMdRG"
 ```
 
-### 3. Telemetría Reactiva (Supabase Broadcast)
+### 5. Telemetría Reactiva (Supabase Broadcast)
 - Los datos de vuelo, saltos y KPIs que ves en el Dashboard no se graban en la base de datos de manera constante para evitar saturación de almacenamiento. En su lugar, viajan a través de los Edge Servers de Supabase usando **Realtime Broadcast** de forma instantánea.
 - El Leaderboard del Dashboard se auto-actualiza reactivamente escuchando eventos `postgres_changes` en la tabla `scores`. En el momento exacto en que un jugador pierde y el juego inserta su score, el Dashboard reorganiza la tabla de posiciones.
 
